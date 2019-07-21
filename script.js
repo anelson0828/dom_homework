@@ -4,19 +4,45 @@
  *   SLICE 1
  **************/
 
-function updateCoffeeView(coffeeQty) {}
+function updateCoffeeView(coffeeQty) {
+  const coffee = document.getElementById('coffee_counter');
+  coffee.innerText = coffeeQty;
+}
 
-function clickCoffee(data) {}
+function clickCoffee(data) {
+  data.coffee++;
+  updateCoffeeView(data.coffee);
+  renderProducers(data);
+}
 
 /**************
  *   SLICE 2
  **************/
 
-function unlockProducers(producers, coffeeCount) {}
+function unlockProducers(producers, coffeeCount) {
+  producers.forEach(producer => {
+    if (coffeeCount >= producer.price / 2) {
+      producer.unlocked = true;
+    }
+  });
+}
 
-function getUnlockedProducers(data) {}
+function getUnlockedProducers(data) {
+  return data.producers.filter(producer => producer.unlocked === true);
+}
 
-function makeDisplayNameFromId(id) {}
+function makeDisplayNameFromId(id) {
+  let str = id[0].toUpperCase();
+  for (let i = 1; i < id.length; i++) {
+    if (id[i] === '_') {
+      str += ' ' + id[i + 1].toUpperCase();
+      i++;
+    } else {
+      str += id[i];
+    }
+  }
+  return str;
+}
 
 // You shoulnd't need to edit this function-- its tests should pass once you've written makeDisplayNameFromId
 function makeProducerDiv(producer) {
@@ -39,27 +65,90 @@ function makeProducerDiv(producer) {
   return containerDiv;
 }
 
-function deleteAllChildNodes(parent) {}
+function deleteAllChildNodes(parent) {
+  while (parent.firstChild) {
+    parent.removeChild(parent.firstChild);
+  }
+}
 
-function renderProducers(data) {}
+function renderProducers(data) {
+  //unlock and then get unlocked
+  unlockProducers(data.producers, data.coffee);
+  const unlockedProducers = getUnlockedProducers(data);
+
+  //get parent container and delete children
+  const producers = document.getElementById('producer_container');
+  deleteAllChildNodes(producers);
+
+  //if there are unlocked producers, append to producer container
+  if (unlockedProducers.length) {
+    const newProducers = unlockedProducers.forEach(producer =>
+      producers.append(makeProducerDiv(producer))
+    );
+    return newProducers;
+  }
+}
 
 /**************
  *   SLICE 3
  **************/
 
-function getProducerById(data, producerId) {}
+function getProducerById(data, producerId) {
+  const producer = data.producers.find(producer => producer.id === producerId);
+  return producer;
+}
 
-function canAffordProducer(data, producerId) {}
+function canAffordProducer(data, producerId) {
+  const producer = getProducerById(data, producerId);
+  return data.coffee >= producer.price / 2;
+}
 
-function updateCPSView(cps) {}
+function updateCPSView(cps) {
+  const cpsElement = document.getElementById('cps');
+  cpsElement.innerText = cps;
+}
 
-function updatePrice(oldPrice) {}
+function updatePrice(oldPrice) {
+  return Math.floor(oldPrice * 1.25);
+}
 
-function attemptToBuyProducer(data, producerId) {}
+function attemptToBuyProducer(data, producerId) {
+  const canAfford = canAffordProducer(data, producerId);
+  const producer = getProducerById(data, producerId);
+  if (canAfford) {
+    data.coffee = data.coffee - producer.price;
+    producer.price = updatePrice(producer.price);
+    data.totalCPS += producer.cps;
+    producer.qty++;
+  }
+  return canAfford;
+}
 
-function buyButtonClick(event, data) {}
+function buyButtonClick(event, data) {
+  if (event.target.tagName === 'BUTTON') {
+    const id = () => {
+      let str = '';
+      for (let i = 4; i < event.target.id.length; i++) {
+        str += event.target.id[i];
+      }
+      return str;
+    };
+    const outcome = attemptToBuyProducer(data, id());
+    if (!outcome) {
+      window.alert('Not enough coffee!');
+    } else {
+      updateCPSView(data.totalCPS);
+      updateCoffeeView(data.coffee);
+      renderProducers(data);
+    }
+  }
+}
 
-function tick(data) {}
+function tick(data) {
+  data.coffee += data.totalCPS;
+  renderProducers(data);
+  updateCoffeeView(data.coffee);
+}
 
 /*************************
  *  Start your engines!
@@ -114,6 +203,6 @@ else if (process) {
     updatePrice,
     attemptToBuyProducer,
     buyButtonClick,
-    tick
+    tick,
   };
 }
